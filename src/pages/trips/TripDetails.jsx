@@ -9,6 +9,8 @@ import {
   Trash2,
   Users,
   Plus,
+  ReceiptText,
+  Hotel,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -100,30 +102,49 @@ function TripDetails() {
 
   const days = calculateDays(trip.startDate, trip.endDate);
 
-  const totalExpenses =
+  /* =========================================================
+     BUDGET CALCULATIONS
+  ========================================================= */
+
+  // Manual expenses
+  const manualExpenses =
     trip.expenses?.reduce(
       (total, expense) => total + Number(expense.amount || 0),
       0,
     ) || 0;
 
-  const totalBudget = Number(trip.budget || 0);
-
-  const remainingBudget = totalBudget - totalExpenses;
-
-  const spentPercentage =
-    totalBudget > 0 ? Math.min((totalExpenses / totalBudget) * 100, 100) : 0;
-
+  // Hotel bookings
   const hotelTotal =
     trip.hotels?.reduce(
       (total, hotel) => total + Number(hotel.total || 0),
       0,
     ) || 0;
 
+  // Transport bookings
   const transportTotal =
     trip.transport?.reduce(
       (total, booking) => total + Number(booking.total || 0),
       0,
     ) || 0;
+
+  // Total spending across the complete trip
+  const totalExpenses = manualExpenses + hotelTotal + transportTotal;
+
+  // Total trip budget
+  const totalBudget = Number(trip.budget || 0);
+
+  // Remaining budget
+  const remainingBudget = totalBudget - totalExpenses;
+
+  // Budget progress
+  const spentPercentage =
+    totalBudget > 0 ? Math.min((totalExpenses / totalBudget) * 100, 100) : 0;
+
+  const isOverBudget = remainingBudget < 0;
+
+  /* =========================================================
+     HANDLERS
+  ========================================================= */
 
   const handleDelete = () => {
     deleteTrip(trip.id);
@@ -145,7 +166,10 @@ function TripDetails() {
         <TripHeader trip={trip} />
 
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          {/* Hero */}
+          {/* =====================================================
+              HERO
+          ====================================================== */}
+
           <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="relative h-72 overflow-hidden sm:h-96">
               {trip.coverImage ? (
@@ -220,9 +244,15 @@ function TripDetails() {
             </div>
           </section>
 
-          {/* Main Content */}
+          {/* =====================================================
+              MAIN CONTENT
+          ====================================================== */}
+
           <div className="mt-6 grid gap-6 lg:grid-cols-3">
-            {/* Left Column */}
+            {/* ===================================================
+                LEFT COLUMN
+            ==================================================== */}
+
             <div className="space-y-6 lg:col-span-2">
               {/* Description */}
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -285,7 +315,10 @@ function TripDetails() {
                 </div>
               </section>
 
-              {/* Hotels */}
+              {/* =================================================
+                  HOTELS
+              ================================================== */}
+
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -362,7 +395,10 @@ function TripDetails() {
                 )}
               </section>
 
-              {/* Transport */}
+              {/* =================================================
+                  TRANSPORT
+              ================================================== */}
+
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -440,7 +476,10 @@ function TripDetails() {
                 )}
               </section>
 
-              {/* Planning Sections */}
+              {/* =================================================
+                  PLANNING SECTIONS
+              ================================================== */}
+
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex items-center justify-between gap-4">
                   <div>
@@ -512,7 +551,10 @@ function TripDetails() {
               </section>
             </div>
 
-            {/* Right Column - Budget */}
+            {/* ===================================================
+                RIGHT COLUMN - BUDGET
+            ==================================================== */}
+
             <aside>
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex items-center justify-between">
@@ -522,7 +564,7 @@ function TripDetails() {
                     </h2>
 
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Trip spending overview
+                      Complete trip spending overview
                     </p>
                   </div>
 
@@ -531,7 +573,7 @@ function TripDetails() {
                   </div>
                 </div>
 
-                {/* Total */}
+                {/* Total Budget */}
                 <div className="mt-6">
                   <p className="text-xs text-slate-400">Total budget</p>
 
@@ -540,22 +582,77 @@ function TripDetails() {
                   </p>
                 </div>
 
+                {/* Total Spent */}
+                <div className="mt-6 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-slate-400">Total spent</p>
+
+                      <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">
+                        ${totalExpenses.toLocaleString()}
+                      </p>
+                    </div>
+
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400">
+                      <DollarSign size={18} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Spending Breakdown */}
+                <div className="mt-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <ReceiptText size={14} />
+                      Manual expenses
+                    </span>
+
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                      ${manualExpenses.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <Hotel size={14} />
+                      Hotels
+                    </span>
+
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                      ${hotelTotal.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <BusFront size={14} />
+                      Transport
+                    </span>
+
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                      ${transportTotal.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Progress */}
                 <div className="mt-6 space-y-4">
                   <div>
                     <div className="mb-2 flex items-center justify-between text-xs">
                       <span className="text-slate-500 dark:text-slate-400">
-                        Spent
+                        Budget used
                       </span>
 
                       <span className="font-semibold text-slate-700 dark:text-slate-200">
-                        ${totalExpenses.toLocaleString()}
+                        {spentPercentage.toFixed(0)}%
                       </span>
                     </div>
 
                     <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                       <div
-                        className="h-full rounded-full bg-sky-500 transition-all duration-500"
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isOverBudget ? "bg-red-500" : "bg-sky-500"
+                        }`}
                         style={{
                           width: `${spentPercentage}%`,
                         }}
@@ -566,18 +663,18 @@ function TripDetails() {
                   {/* Remaining */}
                   <div className="flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
                     <span className="text-sm text-slate-500 dark:text-slate-400">
-                      Remaining
+                      {isOverBudget ? "Over budget" : "Remaining"}
                     </span>
 
                     <span
                       className={`text-sm font-bold ${
-                        remainingBudget < 0
+                        isOverBudget
                           ? "text-red-500"
                           : "text-emerald-600 dark:text-emerald-400"
                       }`}
                     >
                       ${Math.abs(remainingBudget).toLocaleString()}
-                      {remainingBudget < 0 ? " over" : ""}
+                      {isOverBudget ? " over" : ""}
                     </span>
                   </div>
                 </div>
@@ -585,16 +682,20 @@ function TripDetails() {
                 {/* Budget Button */}
                 <Link
                   to={`/budget?trip=${trip.id}`}
-                  className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-sky-50 px-4 text-sm font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:text-blue-800 hover:shadow-md dark:bg-sky-500/10 dark:text-sky-400 dark:hover:bg-sky-500/20 dark:hover:text-sky-300"
+                  className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sky-50 px-4 text-sm font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:text-blue-800 hover:shadow-md dark:bg-sky-500/10 dark:text-sky-400 dark:hover:bg-sky-500/20 dark:hover:text-sky-300"
                 >
                   Manage Budget
+                  <ArrowRight size={16} />
                 </Link>
               </section>
             </aside>
           </div>
         </div>
 
-        {/* Delete Confirmation */}
+        {/* =======================================================
+            DELETE CONFIRMATION
+        ======================================================== */}
+
         {showDelete && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
             <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
