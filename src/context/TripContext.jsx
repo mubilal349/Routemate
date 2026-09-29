@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useNotifications } from "./NotificationContext";
 
 const TripContext = createContext(null);
 
@@ -6,6 +7,14 @@ const TRIPS_STORAGE_KEY = "routemate-trips";
 
 const createTripId = () => {
   return `trip-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+const createActivityId = () => {
+  return `activity-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+const createExpenseId = () => {
+  return `expense-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 };
 
 const createHotelBookingId = () => {
@@ -21,6 +30,8 @@ const createTransportBookingId = () => {
 };
 
 export function TripProvider({ children }) {
+  const { addNotification } = useNotifications();
+
   const [trips, setTrips] = useState(() => {
     try {
       const storedTrips = localStorage.getItem(TRIPS_STORAGE_KEY);
@@ -63,6 +74,14 @@ export function TripProvider({ children }) {
     };
 
     setTrips((currentTrips) => [newTrip, ...currentTrips]);
+
+    // Notification
+    addNotification({
+      title: "Trip created",
+      message: `${newTrip.title} has been added to your trips.`,
+      type: "trip",
+      link: `/trips/${newTrip.id}`,
+    });
 
     return newTrip;
   };
@@ -110,6 +129,9 @@ export function TripProvider({ children }) {
   ========================================================= */
 
   const addActivity = (tripId, activity) => {
+    const activityId = createActivityId();
+    const createdAt = new Date().toISOString();
+
     setTrips((currentTrips) =>
       currentTrips.map((trip) =>
         trip.id === tripId
@@ -118,15 +140,28 @@ export function TripProvider({ children }) {
               activities: [
                 ...(trip.activities || []),
                 {
-                  id: `activity-${Date.now()}`,
+                  id: activityId,
                   ...activity,
+                  createdAt,
                 },
               ],
-              updatedAt: new Date().toISOString(),
+              updatedAt: createdAt,
             }
           : trip,
       ),
     );
+
+    // Find the trip for the notification message
+    const trip = trips.find((item) => item.id === tripId);
+
+    addNotification({
+      title: "Activity added",
+      message: `${
+        activity.title || activity.name || "A new activity"
+      } was added to ${trip?.title || "your trip"}.`,
+      type: "activity",
+      link: `/trips/${tripId}`,
+    });
   };
 
   const removeActivity = (tripId, activityId) => {
@@ -150,6 +185,9 @@ export function TripProvider({ children }) {
   ========================================================= */
 
   const addExpense = (tripId, expense) => {
+    const expenseId = createExpenseId();
+    const createdAt = new Date().toISOString();
+
     setTrips((currentTrips) =>
       currentTrips.map((trip) =>
         trip.id === tripId
@@ -158,15 +196,34 @@ export function TripProvider({ children }) {
               expenses: [
                 ...(trip.expenses || []),
                 {
-                  id: `expense-${Date.now()}`,
+                  id: expenseId,
                   ...expense,
+                  createdAt,
                 },
               ],
-              updatedAt: new Date().toISOString(),
+              updatedAt: createdAt,
             }
           : trip,
       ),
     );
+
+    const trip = trips.find((item) => item.id === tripId);
+
+    const expenseTitle = expense.title || expense.name || "Travel expense";
+
+    const expenseAmount = Number(expense.amount || 0);
+
+    // Notification
+    addNotification({
+      title: "Expense added",
+      message: `${
+        expenseTitle
+      } ($${expenseAmount.toLocaleString()}) was added to ${
+        trip?.title || "your trip"
+      }.`,
+      type: "expense",
+      link: `/trips/${tripId}`,
+    });
   };
 
   const removeExpense = (tripId, expenseId) => {
@@ -190,6 +247,8 @@ export function TripProvider({ children }) {
   ========================================================= */
 
   const addHotelToTrip = (tripId, hotelBooking) => {
+    const bookedAt = new Date().toISOString();
+
     const booking = {
       id: createHotelBookingId(),
 
@@ -221,7 +280,7 @@ export function TripProvider({ children }) {
 
       total: Number(hotelBooking.total) || 0,
 
-      bookedAt: new Date().toISOString(),
+      bookedAt,
     };
 
     setTrips((currentTrips) =>
@@ -230,11 +289,23 @@ export function TripProvider({ children }) {
           ? {
               ...trip,
               hotels: [...(trip.hotels || []), booking],
-              updatedAt: new Date().toISOString(),
+              updatedAt: bookedAt,
             }
           : trip,
       ),
     );
+
+    const trip = trips.find((item) => item.id === tripId);
+
+    // Hotel booking notification
+    addNotification({
+      title: "Hotel booked",
+      message: `${booking.hotelName} has been added to ${
+        trip?.title || "your trip"
+      }.`,
+      type: "hotel",
+      link: `/trips/${tripId}`,
+    });
 
     return booking;
   };
@@ -260,6 +331,8 @@ export function TripProvider({ children }) {
   ========================================================= */
 
   const addTransportToTrip = (tripId, transportBooking) => {
+    const bookedAt = new Date().toISOString();
+
     const booking = {
       id: createTransportBookingId(),
 
@@ -293,7 +366,7 @@ export function TripProvider({ children }) {
 
       image: transportBooking.image || "",
 
-      bookedAt: new Date().toISOString(),
+      bookedAt,
     };
 
     setTrips((currentTrips) =>
@@ -302,11 +375,23 @@ export function TripProvider({ children }) {
           ? {
               ...trip,
               transport: [...(trip.transport || []), booking],
-              updatedAt: new Date().toISOString(),
+              updatedAt: bookedAt,
             }
           : trip,
       ),
     );
+
+    const trip = trips.find((item) => item.id === tripId);
+
+    // Transport notification
+    addNotification({
+      title: "Transport added",
+      message: `${booking.name} has been added to ${
+        trip?.title || "your trip"
+      }.`,
+      type: "transport",
+      link: `/trips/${tripId}`,
+    });
 
     return booking;
   };
