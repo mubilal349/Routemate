@@ -16,11 +16,13 @@ import Itinerary from "../pages/itinerary/Itinerary";
 import Transport from "../pages/transport/Transport";
 
 import Budget from "../pages/budget/Budget";
+import Activity from "../pages/activity/Activity";
 
 import Map from "../pages/map/Map";
 
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import Hotels from "../pages/hotels/Hotels";
+import Settings from "../pages/settings/Settings";
 
 function AppRoutes() {
   return (
@@ -54,7 +56,11 @@ function AppRoutes() {
 
         <Route path="/budget" element={<Budget />} />
 
+        <Route path="/activity" element={<Activity />} />
+
         <Route path="/map" element={<Map />} />
+
+        <Route path="/settings" element={<Settings />} />
       </Route>
 
       {/* Fallback */}
